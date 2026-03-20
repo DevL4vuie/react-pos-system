@@ -9,7 +9,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import POS from './pages/POS.jsx';
 import Products from './pages/Products';
-import Sales from './pages/Sales'; // Make sure you created a dummy file for this!
+import Sales from './pages/Sales';
+import Analytics from './pages/Analytics';
 import Practice from './pages/Practice.jsx';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="pos" element={<POS />} />
             <Route path="products" element={<Products />} />
+            <Route path="analytics" element={<Analytics />} />
             <Route path="sales" element={<Sales />} />
             <Route path="practice" element={<Practice />} />
           </Route>
