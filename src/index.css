@@ -1,46 +1,56 @@
 @import "tailwindcss";
 
-/* Custom Floating Blob Animations */
+/* Blob animation */
 @keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
   100% { transform: translate(0px, 0px) scale(1); }
 }
 
 .animate-blob {
-  animation: blob 7s infinite;
+  animation: blob 8s infinite ease-in-out;
 }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+
+/* Floating shapes */
+@keyframes floatUp {
+  0%   { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
+  50%  { transform: translateY(-30px) rotate(180deg); opacity: 0.3; }
+  100% { transform: translateY(0px) rotate(360deg); opacity: 0.6; }
 }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
+@keyframes floatSide {
+  0%   { transform: translateX(0px) rotate(0deg); }
+  50%  { transform: translateX(20px) rotate(90deg); }
+  100% { transform: translateX(0px) rotate(0deg); }
 }
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-float-up   { animation: floatUp  6s ease-in-out infinite; }
+.animate-float-side { animation: floatSide 5s ease-in-out infinite; }
+.animate-spin-slow  { animation: spinSlow 12s linear infinite; }
+
+.animation-delay-1000 { animation-delay: 1s; }
+.animation-delay-3000 { animation-delay: 3s; }
+.animation-delay-5000 { animation-delay: 5s; }
 
 /* Modal Animations */
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from { 
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.animate-slideUp {
-  animation: slideUp 0.3s ease-out;
-}
+.animate-fadeIn  { animation: fadeIn  0.2s ease-out; }
+.animate-slideUp { animation: slideUp 0.3s ease-out; }

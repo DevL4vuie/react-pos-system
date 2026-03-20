@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Package, Tag, Calendar, Scale } from 'lucide-react';
+import { TrendingUp, Package, Tag, Calendar, Scale, Wallet, BadgeDollarSign, ArrowUpRight } from 'lucide-react';
 import { subscribeToSales, subscribeToProducts } from '../services/firestoreService';
 
 const COLORS = ['#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
@@ -14,6 +14,8 @@ export default function Analytics() {
   const [timeRange, setTimeRange] = useState('week');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [gulaySales, setGulaySales] = useState(0);
+  const [totalCapital, setTotalCapital] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     const unsubscribeSales = subscribeToSales((salesData) => {
@@ -69,19 +71,29 @@ export default function Analytics() {
   };
 
   const processAnalytics = (salesData) => {
-    // Calculate Gulay Sales
     const totalGulay = salesData.reduce((sum, sale) => sum + (sale.gulayTotal || 0), 0);
     setGulaySales(totalGulay);
+
+    // Capital = sum of originalPrice * qty for all sold items
+    const capital = salesData.reduce((sum, sale) =>
+      sum + (sale.items?.reduce((s, item) =>
+        s + ((item.originalPrice ?? item.price) * item.qty), 0) || 0), 0);
+    setTotalCapital(capital);
+
+    // Revenue = sum of sellingPrice * qty (sale.total already uses sellingPrice)
+    const revenue = salesData.reduce((sum, sale) => sum + (sale.total || 0), 0);
+    setTotalRevenue(revenue);
 
     // Top Products
     const productSales = {};
     salesData.forEach(sale => {
       sale.items?.forEach(item => {
         if (!productSales[item.name]) {
-          productSales[item.name] = { name: item.name, quantity: 0, revenue: 0 };
+          productSales[item.name] = { name: item.name, quantity: 0, revenue: 0, capital: 0 };
         }
         productSales[item.name].quantity += item.qty;
         productSales[item.name].revenue += item.price * item.qty;
+        productSales[item.name].capital += (item.originalPrice ?? item.price) * item.qty;
       });
     });
 
@@ -186,17 +198,25 @@ export default function Analytics() {
                         Math.round(filteredSales.length / new Date(new Date(selectedDate).getFullYear(), new Date(selectedDate).getMonth() + 1, 0).getDate());
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen">
+    <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
+      {/* Animated bg */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="animate-blob absolute top-10 left-5 w-56 h-56 bg-purple-300/20 dark:bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute top-32 right-10 w-64 h-64 bg-blue-300/20 dark:bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-4000 absolute bottom-10 left-1/3 w-52 h-52 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl" />
+      </div>
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
-          Sales Analytics
-        </h1>
-        <p className="text-gray-500 text-sm sm:text-base mt-2">Insights and performance metrics</p>
+      <div className="relative mb-6 sm:mb-8 flex justify-end">
+        <div className="text-right">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
+            Sales Analytics
+          </h1>
+          <p className="text-gray-500 text-sm sm:text-base mt-1">Insights and performance metrics</p>
+        </div>
       </div>
 
       {/* Filter Controls */}
-      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-lg border dark:border-gray-700 mb-6">
+      <div className="relative bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-lg border dark:border-gray-700 mb-6">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Range</label>
@@ -245,8 +265,44 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Capital / Revenue / Profit highlight cards */}
+      <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 text-sm mb-1">Total Capital</p>
+              <p className="text-2xl sm:text-3xl font-bold">₱{totalCapital.toFixed(2)}</p>
+              <p className="text-white/70 text-xs mt-1">Cost of goods sold</p>
+            </div>
+            <div className="p-3 bg-white/20 rounded-xl"><Wallet size={22} className="text-white" /></div>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 text-sm mb-1">Total Revenue</p>
+              <p className="text-2xl sm:text-3xl font-bold">₱{totalRevenue.toFixed(2)}</p>
+              <p className="text-white/70 text-xs mt-1">Total sales collected</p>
+            </div>
+            <div className="p-3 bg-white/20 rounded-xl"><BadgeDollarSign size={22} className="text-white" /></div>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 text-sm mb-1">Net Profit</p>
+              <p className="text-2xl sm:text-3xl font-bold">₱{(totalRevenue - totalCapital).toFixed(2)}</p>
+              <p className="text-white/70 text-xs mt-1">Revenue − Capital</p>
+            </div>
+            <div className="p-3 bg-white/20 rounded-xl"><ArrowUpRight size={22} className="text-white" /></div>
+          </div>
+        </div>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-lg border dark:border-gray-700">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 sm:p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
@@ -289,7 +345,7 @@ export default function Analytics() {
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Top Products */}
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-xl border dark:border-gray-700">
           <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent mb-4 sm:mb-6">
@@ -353,8 +409,32 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Capital vs Revenue Chart */}
+      <div className="relative bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-xl border dark:border-gray-700 mb-6 sm:mb-8">
+        <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent mb-4 sm:mb-6">
+          Capital vs Revenue vs Profit
+        </h3>
+        <div className="h-64 sm:h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={[{ name: 'Summary', capital: totalCapital, revenue: totalRevenue, profit: totalRevenue - totalCapital }]}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} />
+              <YAxis axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', fontSize: '12px' }}
+                formatter={(value) => `₱${value.toFixed(2)}`}
+              />
+              <Legend />
+              <Bar dataKey="capital" name="Capital" fill="#F43F5E" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="revenue" name="Revenue" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="profit" name="Profit" fill="#10B981" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
       {/* Sales Trend */}
-      <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-xl border dark:border-gray-700">
+      <div className="relative bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-xl border dark:border-gray-700">
         <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent mb-4 sm:mb-6">
           {timeRange === 'day' ? 'Hourly' : timeRange === 'week' ? 'Weekly' : 'Monthly'} Sales Trend
         </h3>
@@ -375,29 +455,29 @@ export default function Analytics() {
       </div>
 
       {/* Top Products Table */}
-      <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border dark:border-gray-700 overflow-hidden">
+      <div className="relative mt-6 sm:mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border dark:border-gray-700 overflow-hidden">
         <div className="p-4 sm:p-6 border-b dark:border-gray-700">
           <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white">Product Performance</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[500px]">
             <thead>
               <tr className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-900/50 dark:to-gray-900/50 text-gray-600 dark:text-gray-400 text-xs sm:text-sm uppercase tracking-wider">
                 <th className="p-3 sm:p-4 font-semibold">Product</th>
-                <th className="p-3 sm:p-4 font-semibold text-center">Quantity Sold</th>
+                <th className="p-3 sm:p-4 font-semibold text-center">Qty Sold</th>
+                <th className="p-3 sm:p-4 font-semibold text-right">Capital</th>
                 <th className="p-3 sm:p-4 font-semibold text-right">Revenue</th>
+                <th className="p-3 sm:p-4 font-semibold text-right">Profit</th>
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
               {topProducts.map((product, index) => (
                 <tr key={index} className="hover:bg-purple-50/50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="p-3 sm:p-4 font-medium text-gray-800 dark:text-white text-sm sm:text-base">{product.name}</td>
-                  <td className="p-3 sm:p-4 text-center font-semibold text-purple-600 dark:text-purple-400 text-sm sm:text-base">
-                    {product.quantity}
-                  </td>
-                  <td className="p-3 sm:p-4 text-right font-bold text-gray-800 dark:text-white text-sm sm:text-base">
-                    ₱{product.revenue.toFixed(2)}
-                  </td>
+                  <td className="p-3 sm:p-4 font-medium text-gray-800 dark:text-white text-sm">{product.name}</td>
+                  <td className="p-3 sm:p-4 text-center font-semibold text-purple-600 dark:text-purple-400 text-sm">{product.quantity}</td>
+                  <td className="p-3 sm:p-4 text-right text-rose-600 dark:text-rose-400 text-sm">₱{product.capital.toFixed(2)}</td>
+                  <td className="p-3 sm:p-4 text-right text-blue-600 dark:text-blue-400 font-semibold text-sm">₱{product.revenue.toFixed(2)}</td>
+                  <td className="p-3 sm:p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">₱{(product.revenue - product.capital).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
