@@ -61,17 +61,16 @@ export default function Dashboard() {
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
       {/* Animated bg blobs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="animate-blob absolute top-0 left-0 w-64 h-64 bg-blue-300/20 dark:bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-2000 absolute top-20 right-10 w-72 h-72 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-4000 absolute bottom-10 left-1/2 w-56 h-56 bg-yellow-300/20 dark:bg-yellow-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-2000 absolute bottom-32 right-1/3 w-48 h-48 bg-pink-300/15 dark:bg-pink-500/10 rounded-full blur-2xl" />
-        {/* Floating shapes */}
-        <div className="animate-float-up absolute top-1/4 left-[8%] w-6 h-6 rounded-full bg-blue-400/30 dark:bg-blue-400/20" />
-        <div className="animate-float-up animation-delay-2000 absolute top-1/3 right-[12%] w-4 h-4 rotate-45 bg-orange-400/30 dark:bg-orange-400/20" />
-        <div className="animate-float-side animation-delay-1000 absolute bottom-1/4 left-[20%] w-5 h-5 rounded-sm bg-yellow-400/30 dark:bg-yellow-400/20" />
-        <div className="animate-spin-slow absolute top-[15%] right-[25%] w-8 h-8 border-2 border-blue-400/30 dark:border-blue-400/20 rounded-sm" />
-        <div className="animate-float-up animation-delay-3000 absolute bottom-[20%] right-[8%] w-5 h-5 rounded-full bg-pink-400/25 dark:bg-pink-400/15" />
-        <div className="animate-spin-slow animation-delay-5000 absolute bottom-[35%] left-[5%] w-7 h-7 border-2 border-orange-400/25 dark:border-orange-400/15 rotate-45" />
+        <div className="animate-blob absolute -top-16 -left-16 w-96 h-96 bg-blue-300/25 dark:bg-blue-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute top-10 -right-16 w-[28rem] h-[28rem] bg-orange-300/25 dark:bg-orange-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-4000 absolute -bottom-16 left-1/2 w-80 h-80 bg-yellow-300/25 dark:bg-yellow-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute bottom-20 right-1/3 w-72 h-72 bg-pink-300/20 dark:bg-pink-500/10 rounded-full blur-3xl" />
+        <div className="animate-float-up absolute top-1/4 left-[8%] w-10 h-10 rounded-full bg-blue-400/30 dark:bg-blue-400/20" />
+        <div className="animate-float-up animation-delay-2000 absolute top-1/3 right-[12%] w-8 h-8 rotate-45 bg-orange-400/30 dark:bg-orange-400/20" />
+        <div className="animate-float-side animation-delay-1000 absolute bottom-1/4 left-[20%] w-9 h-9 rounded-sm bg-yellow-400/30 dark:bg-yellow-400/20" />
+        <div className="animate-spin-slow absolute top-[15%] right-[25%] w-12 h-12 border-2 border-blue-400/30 dark:border-blue-400/20 rounded-sm" />
+        <div className="animate-float-up animation-delay-3000 absolute bottom-[20%] right-[8%] w-9 h-9 rounded-full bg-pink-400/25 dark:bg-pink-400/15" />
+        <div className="animate-spin-slow animation-delay-5000 absolute bottom-[35%] left-[5%] w-10 h-10 border-2 border-orange-400/25 dark:border-orange-400/15 rotate-45" />
       </div>
 
       <div className="relative mb-6 sm:mb-8 flex justify-end">

@@ -201,9 +201,13 @@ export default function Analytics() {
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
       {/* Animated bg */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="animate-blob absolute top-10 left-5 w-56 h-56 bg-purple-300/20 dark:bg-purple-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-2000 absolute top-32 right-10 w-64 h-64 bg-blue-300/20 dark:bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-4000 absolute bottom-10 left-1/3 w-52 h-52 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl" />
+        <div className="animate-blob absolute -top-16 -left-10 w-96 h-96 bg-purple-300/25 dark:bg-purple-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute top-20 -right-16 w-[28rem] h-[28rem] bg-blue-300/25 dark:bg-blue-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-4000 absolute -bottom-16 left-1/3 w-80 h-80 bg-orange-300/25 dark:bg-orange-500/15 rounded-full blur-3xl" />
+        <div className="animate-float-up absolute top-[18%] right-[8%] w-10 h-10 rounded-full bg-purple-400/25" />
+        <div className="animate-spin-slow absolute top-[35%] left-[6%] w-12 h-12 border-2 border-blue-400/25 rounded-sm" />
+        <div className="animate-float-side animation-delay-2000 absolute bottom-[25%] right-[15%] w-9 h-9 rotate-45 bg-orange-400/20" />
+        <div className="animate-float-up animation-delay-3000 absolute bottom-[12%] left-[20%] w-10 h-10 rounded-full bg-pink-400/20" />
       </div>
       {/* Header */}
       <div className="relative mb-6 sm:mb-8 flex justify-end">

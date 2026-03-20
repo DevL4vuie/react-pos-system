@@ -47,13 +47,16 @@ export default function Sales() {
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
       {/* Animated bg */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="animate-blob absolute top-5 right-10 w-60 h-60 bg-blue-300/20 dark:bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-2000 absolute bottom-20 left-10 w-72 h-72 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl" />
-        <div className="animate-blob animation-delay-4000 absolute top-1/2 left-1/2 w-48 h-48 bg-yellow-300/15 dark:bg-yellow-500/10 rounded-full blur-2xl" />
+        <div className="animate-blob absolute -top-16 -right-16 w-96 h-96 bg-blue-300/25 dark:bg-blue-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-2000 absolute -bottom-16 -left-10 w-[28rem] h-[28rem] bg-orange-300/25 dark:bg-orange-500/15 rounded-full blur-3xl" />
+        <div className="animate-blob animation-delay-4000 absolute top-1/2 left-1/2 w-80 h-80 bg-yellow-300/20 dark:bg-yellow-500/10 rounded-full blur-3xl" />
+        <div className="animate-float-up absolute top-[20%] left-[8%] w-10 h-10 rounded-full bg-blue-400/25" />
+        <div className="animate-spin-slow absolute bottom-[30%] right-[10%] w-12 h-12 border-2 border-orange-400/25 rounded-sm" />
+        <div className="animate-float-side animation-delay-2000 absolute top-[55%] left-[30%] w-9 h-9 rotate-45 bg-yellow-400/20" />
       </div>
 
       <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-        <div>
+        <div className="text-right flex-1">
           <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Sales History</h1>
           <p className="text-gray-500 text-sm sm:text-base">View and manage past transactions.</p>
         </div>
