@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -21,7 +21,7 @@ function App() {
           {/* Public Route - No Sidebar here */}
           <Route path="/login" element={<Login />} />
           <Route path="/practice" element={<Practice />} />
-          
+
           {/* Protected Routes wrapped in the Sidebar Layout */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
@@ -31,6 +31,9 @@ function App() {
             <Route path="sales" element={<Sales />} />
             <Route path="practice" element={<Practice />} />
           </Route>
+
+          {/* Fallback if route does not match */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

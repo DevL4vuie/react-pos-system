@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit, Trash2, Package, FolderOpen } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, FolderOpen, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
 import { subscribeToProducts, addProduct, updateProduct, deleteProduct, subscribeToCategories, addCategory, updateCategory, deleteCategory } from '../services/firestoreService';
 import Modal from '../components/Modal';
 
@@ -125,6 +125,9 @@ export default function Products() {
   const [categoryFormData, setCategoryFormData] = useState({ name: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [showLowStockModal, setShowLowStockModal] = useState(false);
+  const [showInStockModal, setShowInStockModal] = useState(false);
+  const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToProducts((data) => setProducts(data));
@@ -300,6 +303,87 @@ export default function Products() {
           </div>
         </div>
 
+        {/* Stock Monitoring Section */}
+        <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-gray-800 border-b dark:border-gray-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div
+              onClick={() => setShowInStockModal(true)}
+              className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border dark:border-gray-600 cursor-pointer hover:shadow-md transition-all hover:scale-105"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Package className="text-green-600 dark:text-green-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">In Stock</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">
+                    {products.filter(p => p.stock > 0).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setShowLowStockModal(true)}
+              className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border dark:border-gray-600 cursor-pointer hover:shadow-md transition-all hover:scale-105"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                  <AlertTriangle className="text-yellow-600 dark:text-yellow-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">
+                    {products.filter(p => p.minStock && p.stock <= p.minStock).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setShowOutOfStockModal(true)}
+              className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border dark:border-gray-600 cursor-pointer hover:shadow-md transition-all hover:scale-105"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <AlertTriangle className="text-red-600 dark:text-red-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">
+                    {products.filter(p => p.stock <= 0).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border dark:border-gray-600">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <DollarSign className="text-blue-600 dark:text-blue-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Value</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white">
+                    ₱{products.reduce((sum, p) => sum + ((p.sellingPrice ?? p.price) * p.stock || 0), 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {products.filter(p => p.minStock && p.stock <= p.minStock).length > 0 && (
+            <div className="text-center">
+              <button
+                onClick={() => setShowLowStockModal(true)}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-md"
+              >
+                ⚠️ View Low Stock Items ({products.filter(p => p.minStock && p.stock <= p.minStock).length})
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[700px] table-fixed">
             <thead>
@@ -471,6 +555,149 @@ export default function Products() {
             <button onClick={handleDeleteCategory} disabled={isSubmitting}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold transition-all disabled:opacity-50">
               {isSubmitting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Low Stock Modal */}
+      <Modal isOpen={showLowStockModal} onClose={() => setShowLowStockModal(false)} title="Low Stock Alert" size="lg">
+        <div className="space-y-4">
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="text-yellow-600" size={20} />
+              <span className="font-semibold text-yellow-700 dark:text-yellow-400">Items Running Low</span>
+            </div>
+            <p className="text-sm text-yellow-600 dark:text-yellow-400">
+              These products are below their minimum stock levels and need restocking.
+            </p>
+          </div>
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {products.filter(p => p.minStock && p.stock <= p.minStock).map((product) => (
+              <div key={product.id} className="flex justify-between items-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-800 dark:text-white">{product.name}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-gray-500">Current:</span>
+                    <span className="font-bold text-red-600 dark:text-red-400 text-lg">{product.stock}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Min: {product.minStock} | Max: {product.maxStock || '-'}
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Suggested: Restock to {product.maxStock || (product.minStock * 2)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
+            <button
+              onClick={() => setShowLowStockModal(false)}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold transition-all hover:from-blue-700 hover:to-orange-600"
+            >
+              Got it, thanks!
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* In Stock Modal */}
+      <Modal isOpen={showInStockModal} onClose={() => setShowInStockModal(false)} title="In Stock Items" size="lg">
+        <div className="space-y-4">
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="text-green-600" size={20} />
+              <span className="font-semibold text-green-700 dark:text-green-400">Available Products</span>
+            </div>
+            <p className="text-sm text-green-600 dark:text-green-400">
+              These products are currently in stock and available for sale.
+            </p>
+          </div>
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {products.filter(p => p.stock > 0).map((product) => (
+              <div key={product.id} className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-800 dark:text-white">{product.name}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-gray-500">Stock:</span>
+                    <span className="font-bold text-green-600 dark:text-green-400 text-lg">{product.stock}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Selling: ₱{(product.sellingPrice ?? product.price)?.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    Value: ₱{((product.sellingPrice ?? product.price) * product.stock)?.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
+            <button
+              onClick={() => setShowInStockModal(false)}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 text-white font-bold transition-all hover:from-green-700 hover:to-green-800"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Out of Stock Modal */}
+      <Modal isOpen={showOutOfStockModal} onClose={() => setShowOutOfStockModal(false)} title="Out of Stock Items" size="lg">
+        <div className="space-y-4">
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="text-red-600" size={20} />
+              <span className="font-semibold text-red-700 dark:text-red-400">Out of Stock Alert</span>
+            </div>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              These products are currently unavailable and need restocking.
+            </p>
+          </div>
+
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {products.filter(p => p.stock <= 0).map((product) => (
+              <div key={product.id} className="flex justify-between items-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-800 dark:text-white">{product.name}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm text-gray-500">Stock:</span>
+                    <span className="font-bold text-red-600 dark:text-red-400 text-lg">{product.stock}</span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Selling: ₱{(product.sellingPrice ?? product.price)?.toFixed(2)}
+                  </div>
+                  {product.minStock && (
+                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                      Min Stock: {product.minStock}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
+            <button
+              onClick={() => setShowOutOfStockModal(false)}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold transition-all hover:from-red-700 hover:to-red-800"
+            >
+              Close
             </button>
           </div>
         </div>

@@ -40,7 +40,7 @@ const GulayRow = React.memo(({ item, idx, isLast, showRemove, onChange, onAdd, o
   </div>
 ));
 
-const CartFooter = React.memo(({ gulayItems, gulayTotal, total, onGulayChange, onGulayAdd, onGulayRemove, onCheckout, disabled }) => (
+const CartFooter = React.memo(({ gulayItems, schoolSupplyItems, medicineItems, gulayTotal, schoolSupplyTotal, medicineTotal, total, onGulayChange, onGulayAdd, onGulayRemove, onSchoolSupplyChange, onSchoolSupplyAdd, onSchoolSupplyRemove, onMedicineChange, onMedicineAdd, onMedicineRemove, onCheckout, disabled }) => (
   <div className="p-4 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-900 border-t dark:border-gray-700 shrink-0">
     <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
       <div className="flex items-center gap-2 mb-2">
@@ -106,6 +106,10 @@ export default function POS() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [amountPaid, setAmountPaid] = useState('');
   const [gulayItems, setGulayItems] = useState([{ amount: '' }]);
+  const [schoolSupplyItems, setSchoolSupplyItems] = useState([{ amount: '' }]);
+  const [medicineItems, setMedicineItems] = useState([{ amount: '' }]);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -148,9 +152,25 @@ export default function POS() {
   const addGulayRow = useCallback(() => setGulayItems(prev => [...prev, { amount: '' }]), []);
   const removeGulayRow = useCallback((idx) => setGulayItems(prev => prev.filter((_, i) => i !== idx)), []);
 
+  const handleSchoolSupplyChange = useCallback((idx, value) => {
+    setSchoolSupplyItems(prev => prev.map((item, i) => i === idx ? { amount: value } : item));
+  }, []);
+
+  const addSchoolSupplyRow = useCallback(() => setSchoolSupplyItems(prev => [...prev, { amount: '' }]), []);
+  const removeSchoolSupplyRow = useCallback((idx) => setSchoolSupplyItems(prev => prev.filter((_, i) => i !== idx)), []);
+
+  const handleMedicineChange = useCallback((idx, value) => {
+    setMedicineItems(prev => prev.map((item, i) => i === idx ? { amount: value } : item));
+  }, []);
+
+  const addMedicineRow = useCallback(() => setMedicineItems(prev => [...prev, { amount: '' }]), []);
+  const removeMedicineRow = useCallback((idx) => setMedicineItems(prev => prev.filter((_, i) => i !== idx)), []);
+
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
   const gulayTotal = gulayItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  const total = cartSubtotal + gulayTotal;
+  const schoolSupplyTotal = schoolSupplyItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const medicineTotal = medicineItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const total = cartSubtotal + gulayTotal + schoolSupplyTotal + medicineTotal;
   const change = amountPaid ? (parseFloat(amountPaid) - total).toFixed(2) : '0.00';
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
@@ -158,7 +178,7 @@ export default function POS() {
     if (parseFloat(amountPaid) < total) return;
     setIsProcessing(true);
     try {
-      await addSale({
+      const transactionData = {
         items: cart.map(item => ({
           productId: item.id,
           name: item.name,
@@ -168,21 +188,34 @@ export default function POS() {
           category: item.category
         })),
         gulayItems: gulayItems.filter(g => g.amount).map(g => ({ amount: parseFloat(g.amount) })),
+        schoolSupplyItems: schoolSupplyItems.filter(s => s.amount).map(s => ({ amount: parseFloat(s.amount) })),
+        medicineItems: medicineItems.filter(m => m.amount).map(m => ({ amount: parseFloat(m.amount) })),
         gulayTotal,
+        schoolSupplyTotal,
+        medicineTotal,
         total,
         amountPaid: parseFloat(amountPaid),
         change: parseFloat(change),
         cashier: currentUser?.email || 'Unknown',
-        status: 'Completed'
-      });
+        status: 'Completed',
+        timestamp: new Date()
+      };
+
+      await addSale(transactionData);
+
       for (const item of cart) {
         await updateProduct(item.id, { stock: item.stock - item.qty });
       }
+
+      setLastTransaction(transactionData);
       setCart([]);
       setGulayItems([{ amount: '' }]);
+      setSchoolSupplyItems([{ amount: '' }]);
+      setMedicineItems([{ amount: '' }]);
       setAmountPaid('');
       setShowCheckoutModal(false);
       setShowCart(false);
+      setShowReceiptModal(true);
     } catch (error) {
       console.error('Checkout failed:', error);
     }
@@ -190,24 +223,39 @@ export default function POS() {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const displayPrice = (p.sellingPrice ?? p.price)?.toString() || '';
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+                         displayPrice.includes(search);
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const cartFooterProps = {
     gulayItems,
+    schoolSupplyItems,
+    medicineItems,
     gulayTotal,
+    schoolSupplyTotal,
+    medicineTotal,
     total,
     onGulayChange: handleGulayChange,
     onGulayAdd: addGulayRow,
     onGulayRemove: removeGulayRow,
+    onSchoolSupplyChange: handleSchoolSupplyChange,
+    onSchoolSupplyAdd: addSchoolSupplyRow,
+    onSchoolSupplyRemove: removeSchoolSupplyRow,
+    onMedicineChange: handleMedicineChange,
+    onMedicineAdd: addMedicineRow,
+    onMedicineRemove: removeMedicineRow,
     onCheckout: () => setShowCheckoutModal(true),
-    disabled: cart.length === 0 && gulayTotal === 0
+    disabled: cart.length === 0 && gulayTotal === 0 && schoolSupplyTotal === 0 && medicineTotal === 0
   };
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 overflow-hidden">
+      <div className="absolute top-5 left-5 z-50 bg-white/90 dark:bg-black/70 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200">
+        Debug: products={products.length}, cart={cart.length}, total=₱{total.toFixed(2)}
+      </div>
       {/* Animated bg */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="animate-blob absolute -top-20 -left-10 w-96 h-96 bg-blue-300/25 dark:bg-blue-500/15 rounded-full blur-3xl" />
@@ -246,7 +294,7 @@ export default function POS() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products by name or price..."
               className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-800 dark:border-gray-700 dark:text-white shadow-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -270,8 +318,8 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Product Grid — smaller cards */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 overflow-y-auto pb-2 flex-1">
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 overflow-y-auto pb-2 flex-1 px-1 content-start">
           {filteredProducts.map(product => {
             const displayPrice = product.sellingPrice ?? product.price;
             const initials = product.name?.slice(0, 2).toUpperCase() || '??';
@@ -279,20 +327,20 @@ export default function POS() {
               <div
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className={`p-2 rounded-xl cursor-pointer transition-all border-2 ${
-                  product.stock <= 0 ? 'border-red-200 opacity-50 cursor-not-allowed' : 'border-transparent hover:border-orange-400'
-                }`}
+                className={`p-2.5 rounded-xl cursor-pointer transition-all border-2 flex flex-col ${
+                  product.stock <= 0 ? 'border-red-200 opacity-60 cursor-not-allowed' : 'border-transparent hover:border-orange-400 hover:shadow-md'
+                } bg-white dark:bg-gray-800 shadow-sm`}
               >
-                <div className="h-14 sm:h-16 bg-gray-800 rounded-lg mb-1.5 flex flex-col items-center justify-center gap-0.5">
-                  <span className="text-lg sm:text-xl font-black text-blue-400/80 leading-none">{initials}</span>
-                  <span className="text-gray-400 text-[10px] text-center px-1 leading-tight truncate w-full text-center">{product.category || '—'}</span>
+                <div className="h-10 bg-gray-800 rounded-lg mb-1.5 flex flex-col items-center justify-center gap-0.5">
+                  <span className="text-base font-black text-blue-400/80 leading-none">{initials}</span>
+                  <span className="text-gray-400 text-[9px] text-center px-1 leading-tight truncate w-full text-center">{product.category || '—'}</span>
                 </div>
-                <h3 className="font-semibold text-gray-800 dark:text-white truncate text-xs mb-1">{product.name}</h3>
-                <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-gray-800 dark:text-white text-xs mb-1.5 leading-tight line-clamp-2">{product.name}</h3>
+                <div className="flex items-center justify-between gap-1 mt-auto">
                   <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">₱{displayPrice?.toFixed(2)}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    product.stock <= 0 ? 'bg-red-100 text-red-600' :
-                    product.stock < 10 ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    product.stock <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                    product.stock < 10 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                   }`}>
                     {product.stock <= 0 ? 'Out' : product.stock}
                   </span>
@@ -397,6 +445,83 @@ export default function POS() {
               {isProcessing ? 'Processing...' : 'Confirm Payment'}
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Receipt Modal */}
+      <Modal isOpen={showReceiptModal} onClose={() => setShowReceiptModal(false)} title="Receipt" size="md">
+        <div className="space-y-4">
+          {lastTransaction && (
+            <>
+              <div className="text-center border-b pb-4">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Gemma & Leo Store</h2>
+                <p className="text-sm text-gray-500">Receipt #{lastTransaction.timestamp?.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Cashier: {lastTransaction.cashier}</p>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-gray-800 dark:text-white">Items Purchased:</h3>
+                {lastTransaction.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span>{item.name} x{item.qty}</span>
+                    <span>₱{(item.price * item.qty).toFixed(2)}</span>
+                  </div>
+                ))}
+                {lastTransaction.gulayItems?.length > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Gulay</span>
+                    <span>₱{lastTransaction.gulayTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {lastTransaction.schoolSupplyItems?.length > 0 && (
+                  <div className="flex justify-between text-sm text-blue-600">
+                    <span>School Supply</span>
+                    <span>₱{lastTransaction.schoolSupplyTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {lastTransaction.medicineItems?.length > 0 && (
+                  <div className="flex justify-between text-sm text-purple-600">
+                    <span>Medicine</span>
+                    <span>₱{lastTransaction.medicineTotal.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4 space-y-2">
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total:</span>
+                  <span>₱{lastTransaction.total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Amount Paid:</span>
+                  <span>₱{lastTransaction.amountPaid.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Change:</span>
+                  <span>₱{lastTransaction.change.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="text-center text-sm text-gray-500 pt-4 border-t">
+                Thank you for shopping with us!
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => window.print()}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 text-white font-bold transition-all hover:from-green-700 hover:to-green-800"
+                >
+                  🖨️ Print Receipt
+                </button>
+                <button
+                  onClick={() => setShowReceiptModal(false)}
+                  className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>
