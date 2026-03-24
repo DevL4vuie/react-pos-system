@@ -166,6 +166,19 @@ export default function Products() {
   const [showLowStockModal, setShowLowStockModal] = useState(false);
   const [showInStockModal, setShowInStockModal] = useState(false);
   const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
+  const [restockQtys, setRestockQtys] = useState({});
+  const [restockingId, setRestockingId] = useState(null);
+
+  const handleRestock = async (product) => {
+    const qty = parseInt(restockQtys[product.id]);
+    if (!qty || qty <= 0) return;
+    setRestockingId(product.id);
+    try {
+      await updateProduct(product.id, { stock: product.stock + qty });
+      setRestockQtys(prev => ({ ...prev, [product.id]: '' }));
+    } catch (e) { console.error(e); }
+    setRestockingId(null);
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToProducts((data) => setProducts(data));
@@ -449,17 +462,17 @@ export default function Products() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px] table-fixed">
+        <div className="overflow-x-auto hidden sm:block">
+          <table className="w-full text-left border-collapse table-fixed">
             <thead>
               <tr className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-gray-900/50 dark:to-gray-900/50 text-gray-600 dark:text-gray-400 text-xs sm:text-sm uppercase tracking-wider">
-                <th className="p-2 sm:p-4 font-semibold w-[25%]">Product Name</th>
-                <th className="p-2 sm:p-4 font-semibold w-[16%]">Category</th>
-                <th className="p-2 sm:p-4 font-semibold w-[12%]">Cost</th>
-                <th className="p-2 sm:p-4 font-semibold w-[14%]">Selling</th>
-                <th className="p-2 sm:p-4 font-semibold text-center w-[13%]">Stock</th>
-                <th className="p-2 sm:p-4 font-semibold text-center w-[11%]">Min/Max</th>
-                <th className="p-2 sm:p-4 font-semibold text-right w-[9%]">Actions</th>
+                <th className="p-3 sm:p-4 font-semibold w-[26%]">Product Name</th>
+                <th className="p-3 sm:p-4 font-semibold w-[17%]">Category</th>
+                <th className="p-3 sm:p-4 font-semibold w-[13%]">Cost</th>
+                <th className="p-3 sm:p-4 font-semibold w-[14%]">Selling</th>
+                <th className="p-3 sm:p-4 font-semibold text-center w-[14%]">Stock</th>
+                <th className="p-3 sm:p-4 font-semibold text-center w-[10%]">Min/Max</th>
+                <th className="p-3 sm:p-4 font-semibold text-right w-[6%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
@@ -470,21 +483,19 @@ export default function Products() {
                   const original = product.originalPrice ?? product.price;
                   return (
                     <tr key={product.id} className="hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer" onClick={() => openEditModal(product)}>
-                      <td className="p-2 sm:p-4 font-medium text-gray-800 dark:text-white text-sm sm:text-base truncate max-w-0">{product.name}</td>
-                      <td className="p-2 sm:p-4 text-gray-600 dark:text-gray-300">
-                        <span className="bg-gradient-to-r from-blue-100 to-orange-100 dark:from-blue-900/30 dark:to-orange-900/30 px-2 sm:px-3 py-1 rounded-full text-xs font-medium">
+                      <td className="p-3 sm:p-4 font-medium text-gray-800 dark:text-white text-sm truncate max-w-0">{product.name}</td>
+                      <td className="p-3 sm:p-4 text-gray-600 dark:text-gray-300">
+                        <span className="bg-gradient-to-r from-blue-100 to-orange-100 dark:from-blue-900/30 dark:to-orange-900/30 px-2 py-1 rounded-full text-xs font-medium">
                           {product.category}
                         </span>
                       </td>
-                      <td className="p-2 sm:p-4 text-gray-500 dark:text-gray-400 text-sm">₱{original?.toFixed(2)}</td>
-                      <td className="p-2 sm:p-4 text-blue-600 dark:text-blue-400 font-bold text-sm">
+                      <td className="p-3 sm:p-4 text-gray-500 dark:text-gray-400 text-sm">₱{original?.toFixed(2)}</td>
+                      <td className="p-3 sm:p-4 text-blue-600 dark:text-blue-400 font-bold text-sm">
                         {product.byKilo ? (
                           <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full font-medium">Per kilo</span>
-                        ) : (
-                          <>₱{selling?.toFixed(2)}</>
-                        )}
+                        ) : <>₱{selling?.toFixed(2)}</>}
                       </td>
-                      <td className="p-2 sm:p-4 text-center">
+                      <td className="p-3 sm:p-4 text-center">
                         <span className={`font-bold text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                           product.stock <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
                           isLowStock ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
@@ -493,18 +504,18 @@ export default function Products() {
                           {product.stock} {product.stockUnit || 'pcs'}
                         </span>
                       </td>
-                      <td className="p-2 sm:p-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                      <td className="p-3 sm:p-4 text-center text-xs text-gray-500 dark:text-gray-400">
                         {product.minStock || '-'} / {product.maxStock || '-'}
                       </td>
-                      <td className="p-2 sm:p-4">
-                        <div className="flex justify-end gap-2">
+                      <td className="p-3 sm:p-4">
+                        <div className="flex justify-end gap-1">
                           <button onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
-                            className="text-blue-500 hover:text-blue-700 p-1.5 sm:p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all">
-                            <Edit size={16} />
+                            className="text-blue-500 hover:text-blue-700 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all">
+                            <Edit size={15} />
                           </button>
                           <button onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); setShowDeleteModal(true); }}
-                            className="text-red-500 hover:text-red-700 p-1.5 sm:p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all">
-                            <Trash2 size={16} />
+                            className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all">
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -513,14 +524,68 @@ export default function Products() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="p-6 sm:p-8 text-center text-gray-500">
+                  <td colSpan="7" className="p-8 text-center text-gray-500">
                     <Package size={40} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm sm:text-base">No products found</p>
+                    <p className="text-sm">No products found</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="sm:hidden divide-y dark:divide-gray-700">
+          {filteredProducts.length > 0 ? filteredProducts.map((product) => {
+            const isLowStock = product.minStock && product.stock <= product.minStock;
+            const selling = product.sellingPrice ?? product.price;
+            const original = product.originalPrice ?? product.price;
+            return (
+              <div key={product.id} className="p-3 hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-colors" onClick={() => openEditModal(product)}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">{product.name}</p>
+                    <span className="inline-block mt-0.5 bg-gradient-to-r from-blue-100 to-orange-100 dark:from-blue-900/30 dark:to-orange-900/30 px-2 py-0.5 rounded-full text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {product.category}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={(e) => { e.stopPropagation(); openEditModal(product); }}
+                      className="text-blue-500 p-1.5 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg">
+                      <Edit size={15} />
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); setShowDeleteModal(true); }}
+                      className="text-red-500 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <span className="text-xs text-gray-500">Cost: <span className="font-medium text-gray-700 dark:text-gray-300">₱{original?.toFixed(2)}</span></span>
+                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                  <span className="text-xs text-gray-500">Sell: <span className="font-bold text-blue-600 dark:text-blue-400">
+                    {product.byKilo ? 'Per kilo' : `₱${selling?.toFixed(2)}`}
+                  </span></span>
+                  <span className="text-gray-300 dark:text-gray-600">·</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    product.stock <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                    isLowStock ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                    'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                  }`}>
+                    {product.stock} {product.stockUnit || 'pcs'}
+                  </span>
+                  {(product.minStock || product.maxStock) && (
+                    <span className="text-xs text-gray-400">min/max: {product.minStock || '-'}/{product.maxStock || '-'}</span>
+                  )}
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="p-8 text-center text-gray-500">
+              <Package size={40} className="mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No products found</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -642,49 +707,71 @@ export default function Products() {
       </Modal>
 
       {/* Low Stock Modal */}
-      <Modal isOpen={showLowStockModal} onClose={() => setShowLowStockModal(false)} title="Low Stock Alert" size="lg">
+      <Modal isOpen={showLowStockModal} onClose={() => setShowLowStockModal(false)} title="Low Stock — Quick Restock" size="lg">
         <div className="space-y-4">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="text-yellow-600" size={20} />
-              <span className="font-semibold text-yellow-700 dark:text-yellow-400">Items Running Low</span>
-            </div>
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">
-              These products are below their minimum stock levels and need restocking.
-            </p>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-xl border border-yellow-200 dark:border-yellow-800 flex items-center gap-2">
+            <AlertTriangle className="text-yellow-600 shrink-0" size={18} />
+            <p className="text-sm text-yellow-700 dark:text-yellow-400">Enter how many to add for each item and hit <span className="font-bold">+Add</span>. Out of stock items cannot be restocked here.</p>
           </div>
-
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {products.filter(p => p.minStock && p.stock <= p.minStock).map((product) => (
-              <div key={product.id} className="flex justify-between items-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-800 dark:text-white">{product.name}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
-                </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-gray-500">Current:</span>
-                    <span className="font-bold text-red-600 dark:text-red-400 text-lg">{product.stock}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Min: {product.minStock} | Max: {product.maxStock || '-'}
-                  </div>
-                  <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                    Suggested: Restock to {product.maxStock || (product.minStock * 2)}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+            <input
+              type="text"
+              placeholder="Filter items..."
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border focus:ring-2 focus:ring-yellow-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={restockQtys.__search || ''}
+              onChange={(e) => setRestockQtys(prev => ({ ...prev, __search: e.target.value }))}
+            />
           </div>
-
-          <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
-            <button
-              onClick={() => setShowLowStockModal(false)}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold transition-all hover:from-blue-700 hover:to-orange-600"
-            >
-              Got it, thanks!
-            </button>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {products
+              .filter(p => p.minStock && p.stock <= p.minStock)
+              .filter(p => p.name.toLowerCase().includes((restockQtys.__search || '').toLowerCase()))
+              .map((product) => {
+                const outOfStock = product.stock <= 0;
+                return (
+                  <div key={product.id} className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    outOfStock
+                      ? 'bg-gray-50 dark:bg-gray-700/40 border-gray-200 dark:border-gray-600 opacity-60'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                  }`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">{product.name}</p>
+                      <p className="text-xs text-gray-500">
+                        <span className={`font-bold ${outOfStock ? 'text-gray-400' : 'text-red-600 dark:text-red-400'}`}>{product.stock}</span>
+                        <span className="text-gray-400"> / min {product.minStock} {product.stockUnit || 'pcs'}</span>
+                        {outOfStock && <span className="ml-1 text-gray-400 italic">(out of stock)</span>}
+                      </p>
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      inputMode="numeric"
+                      placeholder="Qty"
+                      disabled={outOfStock}
+                      className="w-20 px-2 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-yellow-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white text-center disabled:opacity-40 disabled:cursor-not-allowed"
+                      value={restockQtys[product.id] || ''}
+                      onChange={(e) => setRestockQtys(prev => ({ ...prev, [product.id]: e.target.value }))}
+                      onKeyDown={(e) => !outOfStock && e.key === 'Enter' && handleRestock(product)}
+                    />
+                    <button
+                      onClick={() => handleRestock(product)}
+                      disabled={outOfStock || !restockQtys[product.id] || restockingId === product.id}
+                      className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {restockingId === product.id ? '...' : '+ Add'}
+                    </button>
+                  </div>
+                );
+              })}
+            {products.filter(p => p.minStock && p.stock <= p.minStock).length === 0 && (
+              <p className="text-center text-gray-500 py-6">No low stock items 🎉</p>
+            )}
           </div>
+          <button onClick={() => { setShowLowStockModal(false); setRestockQtys({}); }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold transition-all hover:from-blue-700 hover:to-orange-600">
+            Done
+          </button>
         </div>
       </Modal>
 
@@ -736,51 +823,46 @@ export default function Products() {
       </Modal>
 
       {/* Out of Stock Modal */}
-      <Modal isOpen={showOutOfStockModal} onClose={() => setShowOutOfStockModal(false)} title="Out of Stock Items" size="lg">
+      <Modal isOpen={showOutOfStockModal} onClose={() => { setShowOutOfStockModal(false); setRestockQtys({}); }} title="Out of Stock — Quick Restock" size="lg">
         <div className="space-y-4">
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="text-red-600" size={20} />
-              <span className="font-semibold text-red-700 dark:text-red-400">Out of Stock Alert</span>
-            </div>
-            <p className="text-sm text-red-600 dark:text-red-400">
-              These products are currently unavailable and need restocking.
-            </p>
+          <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-xl border border-red-200 dark:border-red-800 flex items-center gap-2">
+            <AlertTriangle className="text-red-600 shrink-0" size={18} />
+            <p className="text-sm text-red-700 dark:text-red-400">Enter how many to add for each item and hit <span className="font-bold">+Add</span>.</p>
           </div>
-
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
             {products.filter(p => p.stock <= 0).map((product) => (
-              <div key={product.id} className="flex justify-between items-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-800 dark:text-white">{product.name}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{product.category}</p>
+              <div key={product.id} className="flex items-center gap-3 p-3 rounded-xl border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-800 dark:text-white text-sm truncate">{product.name}</p>
+                  <p className="text-xs text-gray-500">{product.category} · Sell: ₱{(product.sellingPrice ?? product.price)?.toFixed(2)}</p>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm text-gray-500">Stock:</span>
-                    <span className="font-bold text-red-600 dark:text-red-400 text-lg">{product.stock}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Selling: ₱{(product.sellingPrice ?? product.price)?.toFixed(2)}
-                  </div>
-                  {product.minStock && (
-                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                      Min Stock: {product.minStock}
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  placeholder="Qty"
+                  className="w-20 px-2 py-1.5 text-sm rounded-lg border focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white text-center"
+                  value={restockQtys[product.id] || ''}
+                  onChange={(e) => setRestockQtys(prev => ({ ...prev, [product.id]: e.target.value }))}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRestock(product)}
+                />
+                <button
+                  onClick={() => handleRestock(product)}
+                  disabled={!restockQtys[product.id] || restockingId === product.id}
+                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {restockingId === product.id ? '...' : '+ Add'}
+                </button>
               </div>
             ))}
+            {products.filter(p => p.stock <= 0).length === 0 && (
+              <p className="text-center text-gray-500 py-6">No out of stock items 🎉</p>
+            )}
           </div>
-
-          <div className="flex gap-3 pt-4 border-t dark:border-gray-700">
-            <button
-              onClick={() => setShowOutOfStockModal(false)}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold transition-all hover:from-red-700 hover:to-red-800"
-            >
-              Close
-            </button>
-          </div>
+          <button onClick={() => { setShowOutOfStockModal(false); setRestockQtys({}); }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold transition-all hover:from-red-700 hover:to-orange-600">
+            Done
+          </button>
         </div>
       </Modal>
     </div>
