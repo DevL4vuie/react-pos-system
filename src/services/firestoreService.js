@@ -78,6 +78,32 @@ export const subscribeToSales = (callback) => {
   });
 };
 
+// Delete Sale
+export const deleteSale = async (id) => {
+  return await deleteDoc(doc(db, 'sales', id));
+};
+
+// Add Expense
+export const addExpense = async (expenseData) => {
+  return await addDoc(collection(db, 'expenses'), {
+    ...expenseData,
+    createdAt: serverTimestamp()
+  });
+};
+
+// Delete Expense
+export const deleteExpense = async (id) => {
+  return await deleteDoc(doc(db, 'expenses', id));
+};
+
+// Real-time Expenses Listener
+export const subscribeToExpenses = (callback) => {
+  const q = query(collection(db, 'expenses'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  });
+};
+
 // Real-time Categories Listener
 export const subscribeToCategories = (callback) => {
   const q = query(categoriesCollection, orderBy('name'));

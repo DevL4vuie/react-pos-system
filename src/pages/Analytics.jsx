@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Package, Tag, Calendar, Scale, Wallet, BadgeDollarSign, ArrowUpRight } from 'lucide-react';
-import { subscribeToSales, subscribeToProducts } from '../services/firestoreService';
+import { TrendingUp, Package, Tag, Calendar, Scale, Wallet, BadgeDollarSign, ArrowUpRight, Receipt } from 'lucide-react';
+import { subscribeToSales, subscribeToProducts, subscribeToExpenses } from '../services/firestoreService';
 
 const COLORS = ['#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
@@ -16,6 +16,7 @@ export default function Analytics() {
   const [gulaySales, setGulaySales] = useState(0);
   const [totalCapital, setTotalCapital] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
   useEffect(() => {
     const unsubscribeSales = subscribeToSales((salesData) => {
@@ -26,9 +27,14 @@ export default function Analytics() {
       setProducts(productsData);
     });
 
+    const unsubscribeExpenses = subscribeToExpenses((expensesData) => {
+      setTotalExpenses(expensesData.reduce((sum, e) => sum + (e.amount || 0), 0));
+    });
+
     return () => {
       unsubscribeSales();
       unsubscribeProducts();
+      unsubscribeExpenses();
     };
   }, []);
 
@@ -193,9 +199,12 @@ export default function Analytics() {
 
   const filteredSales = filterSalesByTimeRange(sales);
   const totalProducts = filteredSales.reduce((sum, sale) => sum + (sale.items?.reduce((s, i) => s + i.qty, 0) || 0), 0);
-  const avgDailySales = timeRange === 'day' ? filteredSales.length : 
+  const avgDailySales = timeRange === 'day' ? filteredSales.length :
                         timeRange === 'week' ? Math.round(filteredSales.length / 7) :
                         Math.round(filteredSales.length / new Date(new Date(selectedDate).getFullYear(), new Date(selectedDate).getMonth() + 1, 0).getDate());
+
+  const netProfit = totalRevenue - totalCapital;
+  const totalProfit = netProfit - totalExpenses;
 
   return (
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
@@ -269,16 +278,16 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Capital / Revenue / Profit highlight cards */}
-      <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+      {/* Top 4 highlight cards */}
+      <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
         <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-xl">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/80 text-sm mb-1">Total Capital</p>
-              <p className="text-2xl sm:text-3xl font-bold">₱{totalCapital.toFixed(2)}</p>
+              <p className="text-xl sm:text-2xl font-bold">₱{totalCapital.toFixed(2)}</p>
               <p className="text-white/70 text-xs mt-1">Cost of goods sold</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-xl"><Wallet size={22} className="text-white" /></div>
+            <div className="p-2 bg-white/20 rounded-xl"><Wallet size={20} className="text-white" /></div>
           </div>
         </div>
 
@@ -286,21 +295,32 @@ export default function Analytics() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-white/80 text-sm mb-1">Total Revenue</p>
-              <p className="text-2xl sm:text-3xl font-bold">₱{totalRevenue.toFixed(2)}</p>
+              <p className="text-xl sm:text-2xl font-bold">₱{totalRevenue.toFixed(2)}</p>
               <p className="text-white/70 text-xs mt-1">Total sales collected</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-xl"><BadgeDollarSign size={22} className="text-white" /></div>
+            <div className="p-2 bg-white/20 rounded-xl"><BadgeDollarSign size={20} className="text-white" /></div>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-xl">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-xl">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-white/80 text-sm mb-1">Net Profit</p>
-              <p className="text-2xl sm:text-3xl font-bold">₱{(totalRevenue - totalCapital).toFixed(2)}</p>
-              <p className="text-white/70 text-xs mt-1">Revenue − Capital</p>
+              <p className="text-white/80 text-sm mb-1">Total Expenses</p>
+              <p className="text-xl sm:text-2xl font-bold">₱{totalExpenses.toFixed(2)}</p>
+              <p className="text-white/70 text-xs mt-1">Store consumption</p>
             </div>
-            <div className="p-3 bg-white/20 rounded-xl"><ArrowUpRight size={22} className="text-white" /></div>
+            <div className="p-2 bg-white/20 rounded-xl"><Receipt size={20} className="text-white" /></div>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-2xl text-white shadow-xl bg-gradient-to-br ${totalProfit >= 0 ? 'from-emerald-500 to-green-600' : 'from-gray-500 to-gray-600'}`}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-white/80 text-sm mb-1">Total Profit</p>
+              <p className="text-xl sm:text-2xl font-bold">₱{totalProfit.toFixed(2)}</p>
+              <p className="text-white/70 text-xs mt-1">After expenses</p>
+            </div>
+            <div className="p-2 bg-white/20 rounded-xl"><TrendingUp size={20} className="text-white" /></div>
           </div>
         </div>
       </div>
@@ -413,14 +433,40 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Profit Breakdown */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700 p-5 mb-6">
+        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4">Profit Breakdown</p>
+        <div className="flex flex-wrap items-center gap-3 text-lg font-bold">
+          <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-5 py-3">
+            <span className="text-xs font-medium text-blue-500 mb-1">Net Profit</span>
+            <span className="text-blue-600 dark:text-blue-400">₱{netProfit.toFixed(2)}</span>
+            <span className="text-[10px] text-gray-400 mt-0.5">Revenue − Capital</span>
+          </div>
+          <span className="text-2xl text-gray-400">−</span>
+          <div className="flex flex-col items-center bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl px-5 py-3">
+            <span className="text-xs font-medium text-orange-500 mb-1">Expenses</span>
+            <span className="text-orange-600 dark:text-orange-400">₱{totalExpenses.toFixed(2)}</span>
+          </div>
+          <span className="text-2xl text-gray-400">=</span>
+          <div className={`flex flex-col items-center border rounded-xl px-5 py-3 ${
+            totalProfit >= 0
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+          }`}>
+            <span className={`text-xs font-medium mb-1 ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>Total Profit</span>
+            <span className={totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>₱{totalProfit.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Capital vs Revenue Chart */}
       <div className="relative bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl shadow-xl border dark:border-gray-700 mb-6 sm:mb-8">
         <h3 className="text-base sm:text-lg font-bold bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent mb-4 sm:mb-6">
-          Capital vs Revenue vs Profit
+          Capital vs Revenue vs Expenses vs Profit
         </h3>
         <div className="h-64 sm:h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={[{ name: 'Summary', capital: totalCapital, revenue: totalRevenue, profit: totalRevenue - totalCapital }]}>
+            <BarChart data={[{ name: 'Summary', capital: totalCapital, revenue: totalRevenue, expenses: totalExpenses, profit: totalRevenue - totalCapital - totalExpenses }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
               <XAxis dataKey="name" axisLine={false} tickLine={false} />
               <YAxis axisLine={false} tickLine={false} />
@@ -431,6 +477,7 @@ export default function Analytics() {
               <Legend />
               <Bar dataKey="capital" name="Capital" fill="#F43F5E" radius={[8, 8, 0, 0]} />
               <Bar dataKey="revenue" name="Revenue" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="expenses" name="Expenses" fill="#F97316" radius={[8, 8, 0, 0]} />
               <Bar dataKey="profit" name="Profit" fill="#10B981" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

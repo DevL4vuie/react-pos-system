@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MonitorSmartphone, Package, FileText, LogOut, Store, BarChart3, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MonitorSmartphone, Package, FileText, LogOut, Store, BarChart3, Menu, X, Wallet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
 
@@ -24,6 +24,7 @@ export default function Layout() {
     { path: '/pos', name: 'POS Terminal', icon: MonitorSmartphone },
     { path: '/products', name: 'Inventory', icon: Package },
     { path: '/analytics', name: 'Analytics', icon: BarChart3 },
+    { path: '/expenses', name: 'Expenses', icon: Wallet },
     { path: '/sales', name: 'Sales History', icon: FileText },
   ];
 

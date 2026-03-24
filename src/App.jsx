@@ -11,6 +11,7 @@ import POS from './pages/POS.jsx';
 import Products from './pages/Products';
 import Sales from './pages/Sales';
 import Analytics from './pages/Analytics';
+import Expenses from './pages/Expenses';
 import Practice from './pages/Practice.jsx';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="sales" element={<Sales />} />
+            <Route path="expenses" element={<Expenses />} />
             <Route path="practice" element={<Practice />} />
           </Route>
 

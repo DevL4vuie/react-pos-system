@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Download, Eye, ReceiptText, Scale } from 'lucide-react';
-import { subscribeToSales } from '../services/firestoreService';
+import { Search, Download, Eye, ReceiptText, Scale, ShieldAlert, Trash2, Lock, KeyRound } from 'lucide-react';
+import { subscribeToSales, deleteSale } from '../services/firestoreService';
 import Modal from '../components/Modal';
+
+const ADMIN_CODE = 'deletionroom'; // change this to your preferred code
 
 function shortId(id) {
   if (!id) return '---';
@@ -15,6 +17,13 @@ export default function Sales() {
   const [transactions, setTransactions] = useState([]);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [showDeleteRoomModal, setShowDeleteRoomModal] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+  const [codeError, setCodeError] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToSales((salesData) => {
@@ -43,6 +52,31 @@ export default function Sales() {
     a.click();
   };
 
+  const handleCodeSubmit = () => {
+    if (adminCode === ADMIN_CODE) {
+      setShowCodeModal(false);
+      setAdminCode('');
+      setCodeError(false);
+      setShowDeleteRoomModal(true);
+    } else {
+      setCodeError(true);
+      setAdminCode('');
+    }
+  };
+
+  const handleDeleteSale = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteSale(deleteTarget.id);
+      setShowConfirmDelete(false);
+      setDeleteTarget(null);
+    } catch (e) {
+      console.error(e);
+    }
+    setIsDeleting(false);
+  };
+
   return (
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
       {/* Animated bg */}
@@ -60,11 +94,18 @@ export default function Sales() {
           <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Sales History</h1>
           <p className="text-gray-500 text-sm sm:text-base">View and manage past transactions.</p>
         </div>
-        <button onClick={exportToCSV}
-          className="bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg text-sm">
-          <Download size={16} />
-          Export CSV
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => { setShowCodeModal(true); setCodeError(false); setAdminCode(''); }}
+            className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg text-sm">
+            <ShieldAlert size={16} />
+            Display
+          </button>
+          <button onClick={exportToCSV}
+            className="bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg text-sm">
+            <Download size={16} />
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl border dark:border-gray-700 overflow-hidden">
@@ -138,6 +179,95 @@ export default function Sales() {
           </table>
         </div>
       </div>
+
+      {/* Admin Code Modal */}
+      <Modal isOpen={showCodeModal} onClose={() => { setShowCodeModal(false); setAdminCode(''); setCodeError(false); }} title="Admin Access" size="sm">
+        <div className="space-y-4">
+          <div className="flex flex-col items-center gap-2 py-2">
+            <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-full">
+              <KeyRound size={28} className="text-red-600 dark:text-red-400" />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Enter the admin code to access the deletion room.</p>
+          </div>
+          <div>
+            <input
+              type="password"
+              placeholder="Enter code"
+              autoFocus
+              className={`w-full px-4 py-3 rounded-xl border text-center text-xl font-bold tracking-widest focus:ring-2 outline-none dark:bg-gray-700 dark:text-white ${
+                codeError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-red-500'
+              }`}
+              value={adminCode}
+              onChange={(e) => { setAdminCode(e.target.value); setCodeError(false); }}
+              onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
+            />
+            {codeError && <p className="text-red-500 text-xs mt-1 text-center">Incorrect code. Try again.</p>}
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => { setShowCodeModal(false); setAdminCode(''); setCodeError(false); }}
+              className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancel
+            </button>
+            <button onClick={handleCodeSubmit}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold">
+              Enter
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Room Modal */}
+      <Modal isOpen={showDeleteRoomModal} onClose={() => { setShowDeleteRoomModal(false); setDeleteTarget(null); }} title="🗑️ Deletion Room" size="lg">
+        <div className="space-y-4">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2">
+            <ShieldAlert size={18} className="text-red-600 shrink-0" />
+            <p className="text-sm text-red-700 dark:text-red-400 font-medium">Admin only — deleted sales cannot be recovered.</p>
+          </div>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {transactions.length === 0 ? (
+              <p className="text-center text-gray-500 py-6">No sales records found.</p>
+            ) : transactions.map((trx) => (
+              <div key={trx.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-blue-600 dark:text-blue-400 text-sm">{trx.shortId}</span>
+                    <span className="text-xs text-gray-400">{trx.date}</span>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{trx.itemCount} items · ₱{trx.total?.toFixed(2)} · {trx.cashier}</div>
+                </div>
+                <button
+                  onClick={() => { setDeleteTarget(trx); setShowConfirmDelete(true); }}
+                  className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-all shrink-0">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setShowDeleteRoomModal(false)}
+            className="w-full py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+            Close
+          </button>
+        </div>
+      </Modal>
+
+      {/* Confirm Delete Modal */}
+      <Modal isOpen={showConfirmDelete} onClose={() => { setShowConfirmDelete(false); setDeleteTarget(null); }} title="Confirm Delete" size="sm">
+        <div className="space-y-4">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            Delete transaction <span className="font-bold text-gray-800 dark:text-white font-mono">{deleteTarget?.shortId}</span> (₱{deleteTarget?.total?.toFixed(2)})? This cannot be undone.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => { setShowConfirmDelete(false); setDeleteTarget(null); }}
+              className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancel
+            </button>
+            <button onClick={handleDeleteSale} disabled={isDeleting}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold disabled:opacity-50">
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={showReceiptModal} onClose={() => setShowReceiptModal(false)} title="Transaction Receipt" size="lg">
         {selectedTransaction && (

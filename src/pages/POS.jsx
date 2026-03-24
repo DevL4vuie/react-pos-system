@@ -110,6 +110,9 @@ export default function POS() {
   const [medicineItems, setMedicineItems] = useState([{ amount: '' }]);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [lastTransaction, setLastTransaction] = useState(null);
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [pendingProduct, setPendingProduct] = useState(null);
+  const [customPrice, setCustomPrice] = useState('');
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -119,9 +122,15 @@ export default function POS() {
 
   const categories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
 
-  const addToCart = (product) => {
+  const addToCart = (product, overridePrice = null) => {
     if (product.stock <= 0) return;
-    const price = product.sellingPrice ?? product.price;
+    if (overridePrice === null && (product.byKilo || !product.sellingPrice && !product.price)) {
+      setPendingProduct(product);
+      setCustomPrice('');
+      setShowPriceModal(true);
+      return;
+    }
+    const price = overridePrice ?? product.sellingPrice ?? product.price;
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -130,6 +139,15 @@ export default function POS() {
       }
       return [...prev, { ...product, price, qty: 1 }];
     });
+  };
+
+  const confirmCustomPrice = () => {
+    const price = parseFloat(customPrice);
+    if (!price || price <= 0) return;
+    addToCart(pendingProduct, price);
+    setShowPriceModal(false);
+    setPendingProduct(null);
+    setCustomPrice('');
   };
 
   const updateQty = useCallback((id, delta) => {
@@ -253,9 +271,6 @@ export default function POS() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 overflow-hidden">
-      <div className="absolute top-5 left-5 z-50 bg-white/90 dark:bg-black/70 p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-xs text-gray-700 dark:text-gray-200">
-        Debug: products={products.length}, cart={cart.length}, total=₱{total.toFixed(2)}
-      </div>
       {/* Animated bg */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="animate-blob absolute -top-20 -left-10 w-96 h-96 bg-blue-300/25 dark:bg-blue-500/15 rounded-full blur-3xl" />
@@ -337,7 +352,11 @@ export default function POS() {
                 </div>
                 <h3 className="font-semibold text-gray-800 dark:text-white text-xs mb-1.5 leading-tight line-clamp-2">{product.name}</h3>
                 <div className="flex items-center justify-between gap-1 mt-auto">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">₱{displayPrice?.toFixed(2)}</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold text-xs">
+                    {product.byKilo
+                      ? <span className="text-orange-500 font-bold">/kilo</span>
+                      : displayPrice ? `₱${displayPrice.toFixed(2)}` : <span className="text-orange-500 italic">Set Price</span>}
+                  </span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                     product.stock <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
                     product.stock < 10 ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
@@ -386,6 +405,40 @@ export default function POS() {
           </div>
         </>
       )}
+
+      {/* Price Input Modal */}
+      <Modal isOpen={showPriceModal} onClose={() => setShowPriceModal(false)} title="Enter Price" size="sm">
+        <div className="space-y-4">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
+            <p className="font-semibold text-gray-800 dark:text-white text-sm">{pendingProduct?.name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{pendingProduct?.category} &mdash; Stock: {pendingProduct?.stock}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Price (₱)</label>
+            <input
+              type="number"
+              step="0.01"
+              inputMode="decimal"
+              autoFocus
+              placeholder="Enter price"
+              className="w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white text-lg font-semibold"
+              value={customPrice}
+              onChange={(e) => setCustomPrice(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && confirmCustomPrice()}
+            />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setShowPriceModal(false)}
+              className="flex-1 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              Cancel
+            </button>
+            <button onClick={confirmCustomPrice} disabled={!customPrice || parseFloat(customPrice) <= 0}
+              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 text-white font-bold transition-all disabled:opacity-50">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Checkout Modal */}
       <Modal isOpen={showCheckoutModal} onClose={() => setShowCheckoutModal(false)} title="Confirm Checkout">

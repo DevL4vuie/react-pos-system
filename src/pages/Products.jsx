@@ -3,7 +3,7 @@ import { Plus, Search, Edit, Trash2, Package, FolderOpen, AlertTriangle, Trendin
 import { subscribeToProducts, addProduct, updateProduct, deleteProduct, subscribeToCategories, addCategory, updateCategory, deleteCategory } from '../services/firestoreService';
 import Modal from '../components/Modal';
 
-const emptyForm = { name: '', category: '', originalPrice: '', sellingPrice: '', stock: '', minStock: '', maxStock: '' };
+const emptyForm = { name: '', category: '', originalPrice: '', sellingPrice: '', stock: '', minStock: '', maxStock: '', byKilo: false, stockUnit: 'pcs' };
 
 // Defined OUTSIDE to prevent remount on every keystroke
 const ProductForm = React.memo(({ formData, setFormData, categories, onSubmit, onCancel, isSubmitting, submitLabel }) => (
@@ -45,29 +45,48 @@ const ProductForm = React.memo(({ formData, setFormData, categories, onSubmit, o
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Selling Price (₱)</label>
-        <input
-          type="number"
-          step="0.01"
-          required
-          inputMode="decimal"
-          className="w-full px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          value={formData.sellingPrice}
-          onChange={(e) => setFormData(f => ({ ...f, sellingPrice: e.target.value }))}
-        />
+        {formData.byKilo ? (
+          <div className="w-full px-4 py-2 rounded-xl border bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600 text-sm text-gray-400 dark:text-gray-500 italic">
+            Set per transaction
+          </div>
+        ) : (
+          <input
+            type="number"
+            step="0.01"
+            required
+            inputMode="decimal"
+            className="w-full px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            value={formData.sellingPrice}
+            onChange={(e) => setFormData(f => ({ ...f, sellingPrice: e.target.value }))}
+          />
+        )}
       </div>
     </div>
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Stock</label>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Stock</label>
+      <div className="flex gap-2">
         <input
           type="number"
           required
           inputMode="numeric"
-          className="w-full px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="flex-1 px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           value={formData.stock}
           onChange={(e) => setFormData(f => ({ ...f, stock: e.target.value }))}
         />
+        <select
+          className="px-3 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+          value={formData.stockUnit}
+          onChange={(e) => setFormData(f => ({ ...f, stockUnit: e.target.value }))}
+        >
+          <option value="pcs">pcs</option>
+          <option value="kilo">kilo</option>
+          <option value="pack">pack</option>
+          <option value="box">box</option>
+          <option value="bottle">bottle</option>
+        </select>
       </div>
+    </div>
+    <div className="grid grid-cols-2 gap-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Stock (Alert)</label>
         <input
@@ -79,17 +98,34 @@ const ProductForm = React.memo(({ formData, setFormData, categories, onSubmit, o
           onChange={(e) => setFormData(f => ({ ...f, minStock: e.target.value }))}
         />
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Stock</label>
+        <input
+          type="number"
+          placeholder="Optional"
+          inputMode="numeric"
+          className="w-full px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          value={formData.maxStock}
+          onChange={(e) => setFormData(f => ({ ...f, maxStock: e.target.value }))}
+        />
+      </div>
     </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Max Stock</label>
-      <input
-        type="number"
-        placeholder="Optional"
-        inputMode="numeric"
-        className="w-full px-4 py-2 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        value={formData.maxStock}
-        onChange={(e) => setFormData(f => ({ ...f, maxStock: e.target.value }))}
-      />
+    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+      <div>
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Sold by Kilo</p>
+        <p className="text-xs text-gray-500">Price will be entered per transaction in POS</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setFormData(f => ({ ...f, byKilo: !f.byKilo, sellingPrice: !f.byKilo ? '' : f.sellingPrice }))}
+        className={`relative w-11 h-6 rounded-full transition-colors ${
+          formData.byKilo ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+        }`}
+      >
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+          formData.byKilo ? 'translate-x-5' : 'translate-x-0'
+        }`} />
+      </button>
     </div>
     <div className="flex gap-3 pt-4">
       <button
@@ -112,6 +148,7 @@ const ProductForm = React.memo(({ formData, setFormData, categories, onSubmit, o
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -125,6 +162,7 @@ export default function Products() {
   const [categoryFormData, setCategoryFormData] = useState({ name: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [categorySearch, setCategorySearch] = useState('');
   const [showLowStockModal, setShowLowStockModal] = useState(false);
   const [showInStockModal, setShowInStockModal] = useState(false);
   const [showOutOfStockModal, setShowOutOfStockModal] = useState(false);
@@ -147,10 +185,12 @@ export default function Products() {
         name: formData.name,
         category: formData.category,
         originalPrice: parseFloat(formData.originalPrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
+        sellingPrice: formData.byKilo ? 0 : parseFloat(formData.sellingPrice),
         stock: parseInt(formData.stock),
+        stockUnit: formData.stockUnit || 'pcs',
         minStock: formData.minStock ? parseInt(formData.minStock) : null,
-        maxStock: formData.maxStock ? parseInt(formData.maxStock) : null
+        maxStock: formData.maxStock ? parseInt(formData.maxStock) : null,
+        byKilo: formData.byKilo
       });
       setShowAddModal(false);
       setFormData(emptyForm);
@@ -168,10 +208,12 @@ export default function Products() {
         name: formData.name,
         category: formData.category,
         originalPrice: parseFloat(formData.originalPrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
+        sellingPrice: formData.byKilo ? 0 : parseFloat(formData.sellingPrice),
         stock: parseInt(formData.stock),
+        stockUnit: formData.stockUnit || 'pcs',
         minStock: formData.minStock ? parseInt(formData.minStock) : null,
-        maxStock: formData.maxStock ? parseInt(formData.maxStock) : null
+        maxStock: formData.maxStock ? parseInt(formData.maxStock) : null,
+        byKilo: formData.byKilo
       });
       setShowEditModal(false);
       setSelectedProduct(null);
@@ -240,16 +282,22 @@ export default function Products() {
       originalPrice: (product.originalPrice ?? product.price ?? '').toString(),
       sellingPrice: (product.sellingPrice ?? product.price ?? '').toString(),
       stock: product.stock.toString(),
+      stockUnit: product.stockUnit || 'pcs',
       minStock: product.minStock?.toString() || '',
-      maxStock: product.maxStock?.toString() || ''
+      maxStock: product.maxStock?.toString() || '',
+      byKilo: product.byKilo || false
     });
     setShowEditModal(true);
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const allCategories = ['All', ...new Set(products.map(p => p.category).filter(Boolean))];
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="relative p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-yellow-50/30 to-orange-50/30 dark:from-gray-900 dark:to-gray-900 min-h-screen overflow-hidden">
@@ -291,15 +339,32 @@ export default function Products() {
 
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl border dark:border-gray-700 overflow-hidden">
         <div className="p-3 sm:p-4 border-b dark:border-gray-700 bg-gradient-to-r from-blue-50 to-orange-50 dark:from-gray-800 dark:to-gray-800">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search inventory..."
-              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search inventory..."
+                className="w-full pl-10 pr-4 py-2 text-sm sm:text-base rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 shrink-0">
+              {allCategories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-2 rounded-xl font-medium whitespace-nowrap text-xs transition-all ${
+                    categoryFilter === cat
+                      ? 'bg-gradient-to-r from-blue-600 to-orange-500 text-white shadow-md'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -388,13 +453,13 @@ export default function Products() {
           <table className="w-full text-left border-collapse min-w-[700px] table-fixed">
             <thead>
               <tr className="bg-gradient-to-r from-blue-50 to-orange-50 dark:from-gray-900/50 dark:to-gray-900/50 text-gray-600 dark:text-gray-400 text-xs sm:text-sm uppercase tracking-wider">
-                <th className="p-2 sm:p-4 font-semibold w-[28%]">Product Name</th>
-                <th className="p-2 sm:p-4 font-semibold w-[18%]">Category</th>
+                <th className="p-2 sm:p-4 font-semibold w-[25%]">Product Name</th>
+                <th className="p-2 sm:p-4 font-semibold w-[16%]">Category</th>
                 <th className="p-2 sm:p-4 font-semibold w-[12%]">Cost</th>
-                <th className="p-2 sm:p-4 font-semibold w-[12%]">Selling</th>
-                <th className="p-2 sm:p-4 font-semibold text-center w-[10%]">Stock</th>
-                <th className="p-2 sm:p-4 font-semibold text-center w-[10%]">Min/Max</th>
-                <th className="p-2 sm:p-4 font-semibold text-right w-[10%]">Actions</th>
+                <th className="p-2 sm:p-4 font-semibold w-[14%]">Selling</th>
+                <th className="p-2 sm:p-4 font-semibold text-center w-[13%]">Stock</th>
+                <th className="p-2 sm:p-4 font-semibold text-center w-[11%]">Min/Max</th>
+                <th className="p-2 sm:p-4 font-semibold text-right w-[9%]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
@@ -412,14 +477,20 @@ export default function Products() {
                         </span>
                       </td>
                       <td className="p-2 sm:p-4 text-gray-500 dark:text-gray-400 text-sm">₱{original?.toFixed(2)}</td>
-                      <td className="p-2 sm:p-4 text-blue-600 dark:text-blue-400 font-bold text-sm">₱{selling?.toFixed(2)}</td>
+                      <td className="p-2 sm:p-4 text-blue-600 dark:text-blue-400 font-bold text-sm">
+                        {product.byKilo ? (
+                          <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full font-medium">Per kilo</span>
+                        ) : (
+                          <>₱{selling?.toFixed(2)}</>
+                        )}
+                      </td>
                       <td className="p-2 sm:p-4 text-center">
-                        <span className={`font-bold text-sm px-3 py-1 rounded-full ${
+                        <span className={`font-bold text-xs px-2 py-1 rounded-full whitespace-nowrap ${
                           product.stock <= 0 ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
                           isLowStock ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                           'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                         }`}>
-                          {product.stock}
+                          {product.stock} {product.stockUnit || 'pcs'}
                         </span>
                       </td>
                       <td className="p-2 sm:p-4 text-center text-xs text-gray-500 dark:text-gray-400">
@@ -499,7 +570,7 @@ export default function Products() {
       </Modal>
 
       {/* Category Modal */}
-      <Modal isOpen={showCategoryModal} onClose={() => { setShowCategoryModal(false); setEditingCategory(null); setCategoryFormData({ name: '' }); }} title="Manage Categories">
+      <Modal isOpen={showCategoryModal} onClose={() => { setShowCategoryModal(false); setEditingCategory(null); setCategoryFormData({ name: '' }); setCategorySearch(''); }} title="Manage Categories">
         <div className="space-y-4">
           <form onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory} className="flex gap-2">
             <input
@@ -521,8 +592,18 @@ export default function Products() {
               </button>
             )}
           </form>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="Search categories..."
+              className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border focus:ring-2 focus:ring-purple-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              value={categorySearch}
+              onChange={(e) => setCategorySearch(e.target.value)}
+            />
+          </div>
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {categories.length > 0 ? categories.map((cat) => (
+            {categories.length > 0 ? categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())).map((cat) => (
               <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
                 <span className="text-gray-800 dark:text-white font-medium">{cat.name}</span>
                 <div className="flex gap-2">
