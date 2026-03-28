@@ -42,7 +42,7 @@
 .animation-delay-5000 { animation-delay: 5s; }
 
 /* Modal Animations */
-@keyframes fadeIn {
+ @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }

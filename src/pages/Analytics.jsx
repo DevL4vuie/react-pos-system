@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { TrendingUp, Package, Tag, Calendar, Scale, Wallet, BadgeDollarSign, ArrowUpRight, Receipt } from 'lucide-react';
+import { TrendingUp, Package, Tag, Calendar, Scale, BadgeDollarSign, Receipt, Boxes } from 'lucide-react';
 import { subscribeToSales, subscribeToProducts, subscribeToExpenses } from '../services/firestoreService';
 
 const COLORS = ['#8B5CF6', '#EC4899', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
@@ -279,22 +279,22 @@ export default function Analytics() {
       </div>
 
       {/* Top 4 highlight cards */}
-      <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-        <div className="p-5 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-xl">
+      <div className="relative grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-white/80 text-sm mb-1">Total Capital</p>
-              <p className="text-xl sm:text-2xl font-bold">₱{totalCapital.toFixed(2)}</p>
-              <p className="text-white/70 text-xs mt-1">Cost of goods sold</p>
+              <p className="text-white/80 text-sm mb-1">Total Inventory</p>
+              <p className="text-xl sm:text-2xl font-bold">{products.length}</p>
+              <p className="text-white/70 text-xs mt-1">Products in stock</p>
             </div>
-            <div className="p-2 bg-white/20 rounded-xl"><Wallet size={20} className="text-white" /></div>
+            <div className="p-2 bg-white/20 rounded-xl"><Boxes size={20} className="text-white" /></div>
           </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xl">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-white/80 text-sm mb-1">Total Revenue</p>
+              <p className="text-white/80 text-sm mb-1">Total Sales</p>
               <p className="text-xl sm:text-2xl font-bold">₱{totalRevenue.toFixed(2)}</p>
               <p className="text-white/70 text-xs mt-1">Total sales collected</p>
             </div>
@@ -313,16 +313,6 @@ export default function Analytics() {
           </div>
         </div>
 
-        <div className={`p-5 rounded-2xl text-white shadow-xl bg-gradient-to-br ${totalProfit >= 0 ? 'from-emerald-500 to-green-600' : 'from-gray-500 to-gray-600'}`}>
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-white/80 text-sm mb-1">Total Profit</p>
-              <p className="text-xl sm:text-2xl font-bold">₱{totalProfit.toFixed(2)}</p>
-              <p className="text-white/70 text-xs mt-1">After expenses</p>
-            </div>
-            <div className="p-2 bg-white/20 rounded-xl"><TrendingUp size={20} className="text-white" /></div>
-          </div>
-        </div>
       </div>
 
       {/* Summary Cards */}
@@ -429,32 +419,6 @@ export default function Analytics() {
                 />
               </PieChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Profit Breakdown */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700 p-5 mb-6">
-        <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4">Profit Breakdown</p>
-        <div className="flex flex-wrap items-center gap-3 text-lg font-bold">
-          <div className="flex flex-col items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-5 py-3">
-            <span className="text-xs font-medium text-blue-500 mb-1">Net Profit</span>
-            <span className="text-blue-600 dark:text-blue-400">₱{netProfit.toFixed(2)}</span>
-            <span className="text-[10px] text-gray-400 mt-0.5">Revenue − Capital</span>
-          </div>
-          <span className="text-2xl text-gray-400">−</span>
-          <div className="flex flex-col items-center bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl px-5 py-3">
-            <span className="text-xs font-medium text-orange-500 mb-1">Expenses</span>
-            <span className="text-orange-600 dark:text-orange-400">₱{totalExpenses.toFixed(2)}</span>
-          </div>
-          <span className="text-2xl text-gray-400">=</span>
-          <div className={`flex flex-col items-center border rounded-xl px-5 py-3 ${
-            totalProfit >= 0
-              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-          }`}>
-            <span className={`text-xs font-medium mb-1 ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>Total Profit</span>
-            <span className={totalProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>₱{totalProfit.toFixed(2)}</span>
           </div>
         </div>
       </div>
